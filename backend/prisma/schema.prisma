@@ -1,0 +1,163 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Difficulty {
+  EASY
+  MEDIUM
+  HARD
+}
+
+enum Topic {
+  ARRAYS
+  STRINGS
+  HASHMAP
+  TREES
+  GRAPHS
+  DP
+  GREEDY
+  BACKTRACKING
+  SLIDING_WINDOW
+  BINARY_SEARCH
+}
+
+enum SkillLevel {
+  BEGINNER
+  INTERMEDIATE
+  ADVANCED
+  EXPERT
+}
+
+enum ChatRole {
+  USER
+  ASSISTANT
+}
+
+enum InterviewType {
+  DSA
+  SYSTEM_DESIGN
+  BEHAVIORAL
+}
+
+model User {
+  id                String          @id @default(cuid())
+  name              String
+  email             String          @unique
+  password          String
+  resetToken        String?
+  resetTokenExpiry  DateTime?
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+  solvedProblems    SolvedProblem[]
+  studyPlans        StudyPlan[]
+  contests          Contest[]
+  chatMessages      ChatMessage[]
+  refreshTokens     RefreshToken[]
+  mockInterviews    MockInterview[]
+
+  @@index([email])
+}
+
+model RefreshToken {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([token])
+}
+
+model Problem {
+  id             String          @id @default(cuid())
+  title          String
+  difficulty     Difficulty
+  topic          Topic
+  leetcodeUrl    String?
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  solvedProblems SolvedProblem[]
+
+  @@index([difficulty])
+  @@index([topic])
+}
+
+model SolvedProblem {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  problemId String
+  problem   Problem  @relation(fields: [problemId], references: [id], onDelete: Cascade)
+  solvedAt  DateTime @default(now())
+  notes     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, problemId])
+  @@index([userId])
+  @@index([problemId])
+  @@index([solvedAt])
+}
+
+model StudyPlan {
+  id          String     @id @default(cuid())
+  userId      String
+  user        User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title       String
+  description String
+  skillLevel  SkillLevel
+  targetCompany String?
+  hoursPerWeek  Int
+  roadmap     Json?
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  @@index([userId])
+}
+
+model Contest {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  contestName String
+  ranking     Int?
+  rating      Int?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([userId])
+  @@index([rating])
+}
+
+model ChatMessage {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role      ChatRole
+  content   String
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([createdAt])
+}
+
+model MockInterview {
+  id          String        @id @default(cuid())
+  userId      String
+  user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type        InterviewType
+  question    String
+  answer      String
+  score       Int?
+  feedback    Json?
+  createdAt   DateTime      @default(now())
+
+  @@index([userId])
+}
