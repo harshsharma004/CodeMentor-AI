@@ -24,4 +24,16 @@ router.post(
 router.put('/:id', problemsController.updateSolvedProblem);
 router.delete('/:id', problemsController.deleteSolvedProblem);
 
+router.post(
+  '/attempts',
+  [
+    body('title').trim().notEmpty(),
+    body('difficulty').notEmpty(),
+    body('topic').notEmpty(),
+    body('status').isIn(['SUCCESS', 'FAILED', 'success', 'failed']),
+    validate,
+  ],
+  problemsController.addProblemAttempt
+);
+
 export default router;

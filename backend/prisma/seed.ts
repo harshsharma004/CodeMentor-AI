@@ -92,7 +92,18 @@ async function main() {
       create: {
         userId: demoUser.id,
         problemId: problem.id,
-        notes: 'Solved using optimal approach',
+      },
+    });
+
+    await prisma.problemNote.upsert({
+      where: {
+        userId_problemId: { userId: demoUser.id, problemId: problem.id },
+      },
+      update: {},
+      create: {
+        userId: demoUser.id,
+        problemId: problem.id,
+        revisionNotes: 'Solved using optimal approach',
       },
     });
   }

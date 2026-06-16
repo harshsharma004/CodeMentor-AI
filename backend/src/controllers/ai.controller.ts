@@ -2,7 +2,7 @@ import type { Response, NextFunction } from 'express';
 import { prisma } from '../lib/prisma.js';
 import * as aiService from '../services/ai.service.js';
 import type { AuthRequest } from '../types/index.js';
-import type { InterviewType, SkillLevel } from '@prisma/client';
+import type { SkillLevel } from '@prisma/client';
 
 export async function chat(req: AuthRequest, res: Response, next: NextFunction) {
   try {
@@ -102,50 +102,3 @@ export async function getStudyPlans(req: AuthRequest, res: Response, next: NextF
   }
 }
 
-export async function generateQuestion(req: AuthRequest, res: Response, next: NextFunction) {
-  try {
-    const { type } = req.body;
-    const question = await aiService.generateInterviewQuestion(type);
-    res.json({ question, type });
-  } catch (error) {
-    next(error);
-  }
-}
-
-export async function evaluateAnswer(req: AuthRequest, res: Response, next: NextFunction) {
-  try {
-    const userId = req.user!.id;
-    const { type, question, answer } = req.body;
-
-    const evaluation = await aiService.evaluateInterviewAnswer({ type, question, answer });
-
-    const saved = await prisma.mockInterview.create({
-      data: {
-        userId,
-        type: type as InterviewType,
-        question,
-        answer,
-        score: evaluation.score,
-        feedback: evaluation.feedback,
-      },
-    });
-
-    res.json(saved);
-  } catch (error) {
-    next(error);
-  }
-}
-
-export async function getMockInterviews(req: AuthRequest, res: Response, next: NextFunction) {
-  try {
-    const userId = req.user!.id;
-    const interviews = await prisma.mockInterview.findMany({
-      where: { userId },
-      orderBy: { createdAt: 'desc' },
-      take: 10,
-    });
-    res.json(interviews);
-  } catch (error) {
-    next(error);
-  }
-}

@@ -3,6 +3,7 @@ import { prisma } from '../lib/prisma.js';
 import { AppError } from '../utils/errors.js';
 import type { AuthRequest } from '../types/index.js';
 import type { Difficulty, Topic, Prisma } from '@prisma/client';
+import * as masteryService from '../services/mastery.service.js';
 
 export async function getProblems(req: AuthRequest, res: Response, next: NextFunction) {
   try {
@@ -70,9 +71,15 @@ export async function addSolvedProblem(req: AuthRequest, res: Response, next: Ne
     }
 
     const solved = await prisma.solvedProblem.create({
-      data: { userId, problemId: problem.id, notes },
+      data: { userId, problemId: problem.id },
       include: { problem: true },
     });
+
+    if (notes) {
+      await prisma.problemNote.create({
+        data: { userId, problemId: problem.id, revisionNotes: notes },
+      });
+    }
 
     res.status(201).json(solved);
   } catch (error) {
@@ -107,9 +114,16 @@ export async function updateSolvedProblem(req: AuthRequest, res: Response, next:
       });
     }
 
-    const updated = await prisma.solvedProblem.update({
+    if (notes !== undefined) {
+      await prisma.problemNote.upsert({
+        where: { userId_problemId: { userId, problemId: solved.problemId } },
+        create: { userId, problemId: solved.problemId, revisionNotes: notes },
+        update: { revisionNotes: notes },
+      });
+    }
+
+    const updated = await prisma.solvedProblem.findUnique({
       where: { id },
-      data: { ...(notes !== undefined && { notes }) },
       include: { problem: true },
     });
 
@@ -134,6 +148,62 @@ export async function deleteSolvedProblem(req: AuthRequest, res: Response, next:
 
     await prisma.solvedProblem.delete({ where: { id } });
     res.json({ message: 'Problem deleted' });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function addProblemAttempt(req: AuthRequest, res: Response, next: NextFunction) {
+  try {
+    const userId = req.user!.id;
+    const { title, difficulty, topic, status, solveTime, hintsUsed, leetcodeUrl } = req.body;
+
+    // Find or create problem
+    let problem = await prisma.problem.findFirst({
+      where: { title: { equals: title, mode: 'insensitive' } },
+    });
+
+    if (!problem) {
+      problem = await prisma.problem.create({
+        data: {
+          title,
+          difficulty: difficulty.toUpperCase() as Difficulty,
+          topic: topic.toUpperCase().replace(' ', '_') as Topic,
+          leetcodeUrl,
+        },
+      });
+    }
+
+    // Log the attempt
+    const attempt = await prisma.problemAttempt.create({
+      data: {
+        userId,
+        problemId: problem.id,
+        status: status.toUpperCase(),
+        solveTime: solveTime ? Number(solveTime) : null,
+        hintsUsed: hintsUsed ? Number(hintsUsed) : 0,
+        difficulty: problem.difficulty,
+        topic: problem.topic,
+      }
+    });
+
+    // If success, automatically log it to SolvedProblem if not already solved
+    if (status.toUpperCase() === 'SUCCESS') {
+      const existingSolved = await prisma.solvedProblem.findUnique({
+        where: { userId_problemId: { userId, problemId: problem.id } },
+      });
+
+      if (!existingSolved) {
+        await prisma.solvedProblem.create({
+          data: { userId, problemId: problem.id },
+        });
+      }
+    }
+
+    // Recalculate Topic Mastery asynchronously
+    masteryService.updateTopicMastery(userId, problem.topic).catch(console.error);
+
+    res.status(201).json(attempt);
   } catch (error) {
     next(error);
   }

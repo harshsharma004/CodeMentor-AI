@@ -4,14 +4,20 @@ import type { Topic, Difficulty } from '@prisma/client';
 const TOPIC_LABELS: Record<Topic, string> = {
   ARRAYS: 'Arrays',
   STRINGS: 'Strings',
-  HASHMAP: 'HashMap',
+  LINKED_LISTS: 'Linked Lists',
+  STACK: 'Stack',
+  QUEUE: 'Queue',
   TREES: 'Trees',
+  BST: 'BST',
   GRAPHS: 'Graphs',
   DP: 'DP',
   GREEDY: 'Greedy',
   BACKTRACKING: 'Backtracking',
   SLIDING_WINDOW: 'Sliding Window',
   BINARY_SEARCH: 'Binary Search',
+  HEAP: 'Heap',
+  TRIE: 'Trie',
+  HASHMAP: 'HashMap',
 };
 
 export async function getDashboardStats(userId: string) {

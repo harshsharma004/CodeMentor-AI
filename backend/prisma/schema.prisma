@@ -3,7 +3,7 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "mysql"
   url      = env("DATABASE_URL")
 }
 
@@ -16,14 +16,20 @@ enum Difficulty {
 enum Topic {
   ARRAYS
   STRINGS
-  HASHMAP
+  LINKED_LISTS
+  STACK
+  QUEUE
   TREES
+  BST
   GRAPHS
   DP
   GREEDY
   BACKTRACKING
   SLIDING_WINDOW
   BINARY_SEARCH
+  HEAP
+  TRIE
+  HASHMAP
 }
 
 enum SkillLevel {
@@ -38,29 +44,34 @@ enum ChatRole {
   ASSISTANT
 }
 
-enum InterviewType {
-  DSA
-  SYSTEM_DESIGN
-  BEHAVIORAL
-}
-
 model User {
   id                String          @id @default(cuid())
+  username          String?         @unique
   name              String
   email             String          @unique
   password          String
   resetToken        String?
   resetTokenExpiry  DateTime?
+  currentStreak     Int             @default(0)
+  longestStreak     Int             @default(0)
   createdAt         DateTime        @default(now())
   updatedAt         DateTime        @updatedAt
+  
+  refreshTokens     RefreshToken[]
   solvedProblems    SolvedProblem[]
+  problemAttempts   ProblemAttempt[]
+  problemNotes      ProblemNote[]
   studyPlans        StudyPlan[]
   contests          Contest[]
   chatMessages      ChatMessage[]
-  refreshTokens     RefreshToken[]
-  mockInterviews    MockInterview[]
+  leetCodeStats     LeetCodeStats?
+  topicMasteries    TopicMastery[]
+  codeReviews       CodeReview[]
+  companyPreps      CompanyPrep[]
+  achievements      Achievement[]
 
   @@index([email])
+  @@index([username])
 }
 
 model RefreshToken {
@@ -83,7 +94,11 @@ model Problem {
   leetcodeUrl    String?
   createdAt      DateTime        @default(now())
   updatedAt      DateTime        @updatedAt
+  
   solvedProblems SolvedProblem[]
+  problemAttempts ProblemAttempt[]
+  problemNotes   ProblemNote[]
+  codeReviews    CodeReview[]
 
   @@index([difficulty])
   @@index([topic])
@@ -96,7 +111,6 @@ model SolvedProblem {
   problemId String
   problem   Problem  @relation(fields: [problemId], references: [id], onDelete: Cascade)
   solvedAt  DateTime @default(now())
-  notes     String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -106,18 +120,126 @@ model SolvedProblem {
   @@index([solvedAt])
 }
 
-model StudyPlan {
-  id          String     @id @default(cuid())
+model ProblemAttempt {
+  id          String   @id @default(cuid())
   userId      String
-  user        User       @relation(fields: [userId], references: [id], onDelete: Cascade)
-  title       String
-  description String
-  skillLevel  SkillLevel
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  problemId   String
+  problem     Problem  @relation(fields: [problemId], references: [id], onDelete: Cascade)
+  status      String   // e.g., "SUCCESS", "FAILED"
+  solveTime   Int?     // in seconds
+  hintsUsed   Int      @default(0)
+  difficulty  Difficulty
+  topic       Topic
+  createdAt   DateTime @default(now())
+
+  @@index([userId])
+  @@index([problemId])
+  @@index([createdAt])
+}
+
+model ProblemNote {
+  id            String   @id @default(cuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  problemId     String
+  problem       Problem  @relation(fields: [problemId], references: [id], onDelete: Cascade)
+  approach      String?  @db.Text
+  mistakes      String?  @db.Text
+  revisionNotes String?  @db.Text
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@unique([userId, problemId])
+  @@index([userId])
+  @@index([problemId])
+}
+
+model LeetCodeStats {
+  id               String   @id @default(cuid())
+  userId           String   @unique
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  leetcodeUsername String
+  totalSolved      Int      @default(0)
+  easySolved       Int      @default(0)
+  mediumSolved     Int      @default(0)
+  hardSolved       Int      @default(0)
+  contestRating    Float?
+  ranking          Int?
+  lastSyncedAt     DateTime @default(now())
+
+  @@index([userId])
+}
+
+model TopicMastery {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  topic       Topic
+  masteryPct  Float    @default(0)
+  solvedCount Int      @default(0)
+  updatedAt   DateTime @updatedAt
+
+  @@unique([userId, topic])
+  @@index([userId])
+}
+
+model CodeReview {
+  id              String   @id @default(cuid())
+  userId          String
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  problemId       String
+  problem         Problem  @relation(fields: [problemId], references: [id], onDelete: Cascade)
+  language        String
+  code            String   @db.Text
+  timeComplexity  String?
+  spaceComplexity String?
+  score           Float?
+  feedback        String?  @db.Text
+  createdAt       DateTime @default(now())
+
+  @@index([userId])
+  @@index([problemId])
+}
+
+model CompanyPrep {
+  id             String   @id @default(cuid())
+  userId         String
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  companyName    String
+  completedCount Int      @default(0)
+  totalCount     Int
+  readinessScore Float?
+  updatedAt      DateTime @updatedAt
+
+  @@unique([userId, companyName])
+  @@index([userId])
+}
+
+model Achievement {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  badgeName   String
+  description String?  @db.Text
+  earnedAt    DateTime @default(now())
+
+  @@unique([userId, badgeName])
+  @@index([userId])
+}
+
+model StudyPlan {
+  id            String     @id @default(cuid())
+  userId        String
+  user          User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title         String
+  description   String     @db.Text
+  skillLevel    SkillLevel
   targetCompany String?
   hoursPerWeek  Int
-  roadmap     Json?
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
+  roadmap       Json?
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
 
   @@index([userId])
 }
@@ -141,23 +263,9 @@ model ChatMessage {
   userId    String
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   role      ChatRole
-  content   String
+  content   String   @db.Text
   createdAt DateTime @default(now())
 
   @@index([userId])
   @@index([createdAt])
-}
-
-model MockInterview {
-  id          String        @id @default(cuid())
-  userId      String
-  user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  type        InterviewType
-  question    String
-  answer      String
-  score       Int?
-  feedback    Json?
-  createdAt   DateTime      @default(now())
-
-  @@index([userId])
 }

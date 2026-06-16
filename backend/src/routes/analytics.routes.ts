@@ -9,4 +9,8 @@ router.get('/weakness', authenticate, analyticsController.getAnalytics);
 router.get('/profile', authenticate, analyticsController.getProfile);
 router.get('/leaderboard', authenticate, analyticsController.getLeaderboard);
 
+router.get('/readiness', authenticate, analyticsController.getReadiness);
+router.get('/velocity', authenticate, analyticsController.getVelocity);
+router.get('/mastery', authenticate, analyticsController.getMastery);
+
 export default router;

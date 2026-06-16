@@ -25,23 +25,4 @@ router.post(
 
 router.get('/study-plans', aiController.getStudyPlans);
 
-router.post(
-  '/mock-interview/question',
-  [body('type').isIn(['DSA', 'SYSTEM_DESIGN', 'BEHAVIORAL']), validate],
-  aiController.generateQuestion
-);
-
-router.post(
-  '/mock-interview/evaluate',
-  [
-    body('type').isIn(['DSA', 'SYSTEM_DESIGN', 'BEHAVIORAL']),
-    body('question').notEmpty(),
-    body('answer').notEmpty(),
-    validate,
-  ],
-  aiController.evaluateAnswer
-);
-
-router.get('/mock-interviews', aiController.getMockInterviews);
-
 export default router;
