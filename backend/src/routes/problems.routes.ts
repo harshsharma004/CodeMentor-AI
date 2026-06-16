@@ -9,6 +9,7 @@ const router = Router();
 router.use(authenticate);
 
 router.get('/', problemsController.getProblems);
+router.get('/daily-challenge', problemsController.getDailyChallenge);
 
 router.post(
   '/',

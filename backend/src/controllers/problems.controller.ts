@@ -4,6 +4,7 @@ import { AppError } from '../utils/errors.js';
 import type { AuthRequest } from '../types/index.js';
 import type { Difficulty, Topic, Prisma } from '@prisma/client';
 import * as masteryService from '../services/mastery.service.js';
+import * as problemsService from '../services/problems.service.js';
 
 export async function getProblems(req: AuthRequest, res: Response, next: NextFunction) {
   try {
@@ -204,6 +205,16 @@ export async function addProblemAttempt(req: AuthRequest, res: Response, next: N
     masteryService.updateTopicMastery(userId, problem.topic).catch(console.error);
 
     res.status(201).json(attempt);
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function getDailyChallenge(req: AuthRequest, res: Response, next: NextFunction) {
+  try {
+    const userId = req.user!.id;
+    const challenge = await problemsService.generateDailyChallenge(userId);
+    res.json(challenge);
   } catch (error) {
     next(error);
   }

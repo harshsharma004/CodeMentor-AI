@@ -8,6 +8,8 @@ import problemsRoutes from './routes/problems.routes.js';
 import aiRoutes from './routes/ai.routes.js';
 import analyticsRoutes from './routes/analytics.routes.js';
 import contestsRoutes from './routes/contests.routes.js';
+import leetcodeRoutes from './routes/leetcode.routes.js';
+import notesRoutes from './routes/notes.routes.js';
 
 const app = express();
 
@@ -29,6 +31,8 @@ app.use('/api/problems', problemsRoutes);
 app.use('/api/ai', aiRoutes);
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/contests', contestsRoutes);
+app.use('/api/leetcode', leetcodeRoutes);
+app.use('/api/notes', notesRoutes);
 
 app.use(errorHandler);
 

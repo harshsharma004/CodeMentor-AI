@@ -66,6 +66,7 @@ export async function generateStudyPlan(req: AuthRequest, res: Response, next: N
     const { skillLevel, targetCompany, hoursPerWeek } = req.body;
 
     const plan = await aiService.generateStudyPlan({
+      userId,
       skillLevel,
       targetCompany,
       hoursPerWeek: parseInt(hoursPerWeek, 10),
@@ -102,3 +103,48 @@ export async function getStudyPlans(req: AuthRequest, res: Response, next: NextF
   }
 }
 
+export async function detectWeaknesses(req: AuthRequest, res: Response, next: NextFunction) {
+  try {
+    const userId = req.user!.id;
+    const analysis = await aiService.detectWeaknesses(userId);
+    res.json(analysis);
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function reviewCode(req: AuthRequest, res: Response, next: NextFunction) {
+  try {
+    const userId = req.user!.id;
+    const { problemId, code, language } = req.body;
+    
+    const review = await aiService.reviewCode({ userId, problemId, code, language });
+    res.status(201).json(review);
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function getCodeReviews(req: AuthRequest, res: Response, next: NextFunction) {
+  try {
+    const userId = req.user!.id;
+    const reviews = await prisma.codeReview.findMany({
+      where: { userId },
+      include: { problem: { select: { title: true, difficulty: true } } },
+      orderBy: { createdAt: 'desc' }
+    });
+    res.json(reviews);
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function generateExplanation(req: AuthRequest, res: Response, next: NextFunction) {
+  try {
+    const { problemId } = req.body;
+    const explanation = await aiService.generateExplanation(problemId);
+    res.json(explanation);
+  } catch (error) {
+    next(error);
+  }
+}

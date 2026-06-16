@@ -1,4 +1,5 @@
 import OpenAI from 'openai';
+import { prisma } from '../lib/prisma.js';
 import { env } from '../config/env.js';
 import { AppError } from '../utils/errors.js';
 
@@ -58,10 +59,18 @@ export async function getMentorResponse(
 }
 
 export async function generateStudyPlan(params: {
+  userId: string;
   skillLevel: string;
   targetCompany: string;
   hoursPerWeek: number;
 }): Promise<{ title: string; description: string; roadmap: object }> {
+  const masteries = await prisma.topicMastery.findMany({
+    where: { userId: params.userId },
+    orderBy: { masteryPct: 'asc' },
+    take: 5
+  });
+  const weakTopics = masteries.map(m => m.topic).join(', ') || 'None recorded yet';
+
   const prompt = `Generate a detailed coding interview study plan as JSON with this structure:
 {
   "title": "string",
@@ -85,6 +94,7 @@ User profile:
 - Skill Level: ${params.skillLevel}
 - Target Company: ${params.targetCompany}
 - Hours per week: ${params.hoursPerWeek}
+- Known Weaknesses to Prioritize: ${weakTopics}
 
 Return ONLY valid JSON, no markdown.`;
 
@@ -133,31 +143,35 @@ Return ONLY valid JSON, no markdown.`;
   }
 }
 
-export async function evaluateInterviewAnswer(params: {
-  type: string;
-  question: string;
-  answer: string;
-}): Promise<{ score: number; feedback: object }> {
-  const prompt = `Evaluate this ${params.type} interview answer and return JSON:
+export async function detectWeaknesses(userId: string) {
+  const masteries = await prisma.topicMastery.findMany({
+    where: { userId }
+  });
+  
+  const recentAttempts = await prisma.problemAttempt.findMany({
+    where: { userId },
+    orderBy: { createdAt: 'desc' },
+    take: 20
+  });
+
+  const prompt = `Analyze this user's LeetCode preparation data and provide a weakness analysis.
+Return JSON ONLY with this exact structure:
 {
-  "score": 0-100,
-  "feedback": {
-    "correctness": "assessment",
-    "communication": "assessment",
-    "optimization": "assessment",
-    "strengths": ["strength1"],
-    "improvements": ["improvement1"],
-    "overall": "summary"
-  }
+  "weaknesses": ["list of weak topics or patterns"],
+  "strengths": ["list of strong topics"],
+  "recommendedFocus": "A short paragraph on what to focus on next",
+  "summary": "Overall summary of their progress"
 }
 
-Question: ${params.question}
-Answer: ${params.answer}
+Topic Mastery Data:
+${JSON.stringify(masteries.map(m => ({ topic: m.topic, mastery: m.masteryPct })), null, 2)}
 
-Return ONLY valid JSON.`;
+Recent Attempts:
+${JSON.stringify(recentAttempts.map(a => ({ topic: a.topic, status: a.status, difficulty: a.difficulty, time: a.solveTime })), null, 2)}
+`;
 
   const response = await chatCompletion([
-    { role: 'system', content: 'You are an interview evaluator. Return only valid JSON.' },
+    { role: 'system', content: "You are an expert technical interviewer and AI mentor analyzing a student's coding progress. Return only valid JSON." },
     { role: 'user', content: prompt },
   ]);
 
@@ -165,33 +179,95 @@ Return ONLY valid JSON.`;
     const cleaned = response.replace(/```json\n?|\n?```/g, '').trim();
     return JSON.parse(cleaned);
   } catch {
-    const wordCount = params.answer.split(/\s+/).length;
-    const score = Math.min(85, Math.max(40, wordCount * 2));
     return {
-      score,
-      feedback: {
-        correctness: wordCount > 50 ? 'Good coverage of key concepts' : 'Answer needs more technical depth',
-        communication: wordCount > 30 ? 'Clear structure' : 'Try to organize your thoughts better',
-        optimization: 'Consider discussing time/space complexity',
-        strengths: ['Attempted the problem', 'Showed problem-solving approach'],
-        improvements: ['Add more specific examples', 'Discuss edge cases', 'Mention trade-offs'],
-        overall: `Score: ${score}/100. Keep practicing and focus on structured responses.`,
-      },
+      weaknesses: ["Not enough data to determine"],
+      strengths: ["Keep practicing!"],
+      recommendedFocus: "Continue solving problems to gather more data.",
+      summary: "AI analysis could not be completed."
     };
   }
 }
 
-export async function generateInterviewQuestion(type: string): Promise<string> {
-  const prompts: Record<string, string> = {
-    DSA: 'Generate one medium-level DSA coding interview question. Include problem statement only, no solution.',
-    SYSTEM_DESIGN: 'Generate one system design interview question suitable for mid-level engineers. Include requirements only.',
-    BEHAVIORAL: 'Generate one behavioral interview question using the STAR method format. Question only.',
-  };
+export async function reviewCode(params: {
+  userId: string;
+  problemId: string;
+  code: string;
+  language: string;
+}) {
+  const problem = await prisma.problem.findUnique({ where: { id: params.problemId } });
+  if (!problem) throw new AppError(404, 'Problem not found');
+
+  const prompt = `Review this ${params.language} code for the LeetCode problem "${problem.title}" (Difficulty: ${problem.difficulty}, Topic: ${problem.topic}).
+Provide a code review formatted as JSON.
+Format exactly like this:
+{
+  "timeComplexity": "O(...)",
+  "spaceComplexity": "O(...)",
+  "score": 85,
+  "feedback": "Your markdown formatted feedback explaining correctness, the core pattern used (e.g., Sliding Window), key insights, and optimizations."
+}
+
+Code:
+${params.code}
+`;
 
   const response = await chatCompletion([
-    { role: 'system', content: 'You are an interview question generator. Be concise.' },
-    { role: 'user', content: prompts[type] || prompts.DSA },
+    { role: 'system', content: 'You are an expert technical interviewer reviewing code. Return only valid JSON.' },
+    { role: 'user', content: prompt }
   ]);
 
-  return response;
+  let parsed: any;
+  try {
+    const cleaned = response.replace(/```json\n?|\n?```/g, '').trim();
+    parsed = JSON.parse(cleaned);
+  } catch {
+    parsed = {
+      timeComplexity: "Unknown",
+      spaceComplexity: "Unknown",
+      score: 70,
+      feedback: "Good effort! The AI was unable to structure the feedback properly, but be sure to verify your time and space complexity."
+    };
+  }
+
+  const review = await prisma.codeReview.create({
+    data: {
+      userId: params.userId,
+      problemId: params.problemId,
+      code: params.code,
+      language: params.language,
+      timeComplexity: parsed.timeComplexity,
+      spaceComplexity: parsed.spaceComplexity,
+      score: parsed.score,
+      feedback: parsed.feedback
+    }
+  });
+
+  return review;
+}
+
+export async function generateExplanation(problemId: string) {
+  const problem = await prisma.problem.findUnique({ where: { id: problemId } });
+  if (!problem) throw new AppError(404, 'Problem not found');
+
+  const prompt = `Provide a brief explanation for the LeetCode problem "${problem.title}" (Topic: ${problem.topic}).
+Return ONLY valid JSON with this exact structure:
+{
+  "pattern": "Name of the core algorithm or pattern (e.g., Sliding Window, BFS, Two Pointers)",
+  "keyInsight": "A 1-2 sentence explanation of the main trick or insight required to solve this optimally."
+}`;
+
+  const response = await chatCompletion([
+    { role: 'system', content: 'You are an AI coding mentor. Return only valid JSON.' },
+    { role: 'user', content: prompt }
+  ]);
+
+  try {
+    const cleaned = response.replace(/```json\n?|\n?```/g, '').trim();
+    return JSON.parse(cleaned);
+  } catch {
+    return {
+      pattern: problem.topic.replace('_', ' '),
+      keyInsight: "Focus on understanding the core properties of this topic to solve this problem efficiently."
+    };
+  }
 }

@@ -24,5 +24,24 @@ router.post(
 );
 
 router.get('/study-plans', aiController.getStudyPlans);
+router.get('/weaknesses', aiController.detectWeaknesses);
+
+router.post(
+  '/code-review',
+  [
+    body('problemId').notEmpty(),
+    body('code').trim().notEmpty(),
+    body('language').notEmpty(),
+    validate,
+  ],
+  aiController.reviewCode
+);
+router.get('/code-reviews', aiController.getCodeReviews);
+
+router.post(
+  '/explanation',
+  [body('problemId').notEmpty(), validate],
+  aiController.generateExplanation
+);
 
 export default router;
