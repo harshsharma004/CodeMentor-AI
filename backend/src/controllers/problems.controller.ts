@@ -15,7 +15,9 @@ export async function getProblems(req: AuthRequest, res: Response, next: NextFun
 
     if (search) {
       where.problem = {
-        title: { contains: String(search), mode: 'insensitive' },
+        OR: [
+          { title: { contains: String(search) } },
+        ],
       };
     }
     if (topic) {
@@ -49,7 +51,7 @@ export async function addSolvedProblem(req: AuthRequest, res: Response, next: Ne
     const { title, difficulty, topic, leetcodeUrl, notes } = req.body;
 
     let problem = await prisma.problem.findFirst({
-      where: { title: { equals: title, mode: 'insensitive' } },
+      where: { title: { equals: title } },
     });
 
     if (!problem) {
@@ -161,7 +163,7 @@ export async function addProblemAttempt(req: AuthRequest, res: Response, next: N
 
     // Find or create problem
     let problem = await prisma.problem.findFirst({
-      where: { title: { equals: title, mode: 'insensitive' } },
+      where: { title: { equals: title } },
     });
 
     if (!problem) {

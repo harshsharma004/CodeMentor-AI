@@ -11,12 +11,13 @@ import { ForgotPasswordPage } from '@/features/auth/ForgotPasswordPage';
 import { ResetPasswordPage } from '@/features/auth/ResetPasswordPage';
 import { DashboardPage } from '@/features/dashboard/DashboardPage';
 import { ProblemsPage } from '@/features/problems/ProblemsPage';
-import { AiMentorPage } from '@/features/ai-mentor/AiMentorPage';
+import { CodeReviewPage } from '@/features/ai-mentor/CodeReviewPage';
 import { StudyPlanPage } from '@/features/study-plan/StudyPlanPage';
 import { AnalyticsPage } from '@/features/analytics/AnalyticsPage';
 import { MockInterviewPage } from '@/features/mock-interview/MockInterviewPage';
 import { ProfilePage } from '@/features/profile/ProfilePage';
 import { LeaderboardPage } from '@/features/leaderboard/LeaderboardPage';
+import { PublicProfilePage } from '@/features/public-profile/PublicProfilePage';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -72,7 +73,7 @@ export default function App() {
             <Route element={<AppLayout />}>
               <Route path="/dashboard" element={<DashboardPage />} />
               <Route path="/problems" element={<ProblemsPage />} />
-              <Route path="/ai-mentor" element={<AiMentorPage />} />
+              <Route path="/code-review" element={<CodeReviewPage />} />
               <Route path="/study-plan" element={<StudyPlanPage />} />
               <Route path="/analytics" element={<AnalyticsPage />} />
               <Route path="/mock-interview" element={<MockInterviewPage />} />
@@ -82,6 +83,9 @@ export default function App() {
           </Route>
 
           <Route path="*" element={<Navigate to="/" replace />} />
+          
+          {/* Public Developer Profile (Catch-All) */}
+          <Route path="/:username" element={<PublicProfilePage />} />
         </Routes>
       </BrowserRouter>
     </QueryClientProvider>

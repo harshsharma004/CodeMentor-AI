@@ -1,15 +1,13 @@
 import { NavLink } from 'react-router';
-import { X, LayoutDashboard, Code2, Bot, BookOpen, BarChart3, Mic, User, Trophy } from 'lucide-react';
+import { X, LayoutDashboard, Code2, Bot, BookOpen, BarChart3, User } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const navItems = [
   { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
   { to: '/problems', icon: Code2, label: 'Problems' },
-  { to: '/ai-mentor', icon: Bot, label: 'AI Mentor' },
+  { to: '/code-review', icon: Bot, label: 'Code Review' },
   { to: '/study-plan', icon: BookOpen, label: 'Study Plan' },
   { to: '/analytics', icon: BarChart3, label: 'Analytics' },
-  { to: '/mock-interview', icon: Mic, label: 'Mock Interview' },
-  { to: '/leaderboard', icon: Trophy, label: 'Leaderboard' },
   { to: '/profile', icon: User, label: 'Profile' },
 ];
 
@@ -23,11 +21,11 @@ export function MobileNav({ open, onClose }: MobileNavProps) {
 
   return (
     <div className="fixed inset-0 z-50 lg:hidden">
-      <div className="absolute inset-0 bg-black/60" onClick={onClose} />
-      <div className="absolute left-0 top-0 h-full w-72 bg-primary border-r border-slate-700">
-        <div className="flex items-center justify-between p-4 border-b border-slate-700">
-          <span className="font-bold text-white">CodeMentor AI</span>
-          <button onClick={onClose} className="p-2 text-muted hover:text-white">
+      <div className="absolute inset-0 bg-background/80 backdrop-blur-sm" onClick={onClose} />
+      <div className="absolute left-0 top-0 h-full w-72 bg-card border-r border-border shadow-xl">
+        <div className="flex h-14 items-center justify-between px-4 border-b border-border">
+          <span className="text-sm font-semibold text-foreground tracking-tight">CodeMentor AI</span>
+          <button onClick={onClose} className="p-2 text-muted-foreground hover:text-foreground">
             <X className="h-5 w-5" />
           </button>
         </div>
@@ -39,8 +37,8 @@ export function MobileNav({ open, onClose }: MobileNavProps) {
               onClick={onClose}
               className={({ isActive }) =>
                 cn(
-                  'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium',
-                  isActive ? 'bg-secondary/10 text-secondary' : 'text-slate-400 hover:text-white'
+                  'flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors',
+                  isActive ? 'bg-secondary text-secondary-foreground' : 'text-muted-foreground hover:bg-muted hover:text-foreground'
                 )
               }
             >

@@ -10,6 +10,7 @@ import analyticsRoutes from './routes/analytics.routes.js';
 import contestsRoutes from './routes/contests.routes.js';
 import leetcodeRoutes from './routes/leetcode.routes.js';
 import notesRoutes from './routes/notes.routes.js';
+import usersRoutes from './routes/users.routes.js';
 
 const app = express();
 
@@ -33,6 +34,7 @@ app.use('/api/analytics', analyticsRoutes);
 app.use('/api/contests', contestsRoutes);
 app.use('/api/leetcode', leetcodeRoutes);
 app.use('/api/notes', notesRoutes);
+app.use('/api/users', usersRoutes);
 
 app.use(errorHandler);
 

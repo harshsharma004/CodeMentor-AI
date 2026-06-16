@@ -3,9 +3,16 @@ import { Mail, Code2, Flame, Trophy, TrendingUp, TrendingDown } from 'lucide-rea
 import api from '@/lib/api';
 import { Card } from '@/components/ui/Card';
 import { Spinner } from '@/components/ui/Spinner';
+import { Button } from '@/components/ui/Button';
 import type { ProfileStats } from '@/types';
+import { useAuthStore } from '@/stores/authStore';
+import { useState } from 'react';
 
 export function ProfilePage() {
+  const user = useAuthStore((s) => s.user);
+  const [usernameInput, setUsernameInput] = useState(user?.username || '');
+  const [isUpdating, setIsUpdating] = useState(false);
+
   const { data: profile, isLoading } = useQuery({
     queryKey: ['profile'],
     queryFn: async () => {
@@ -13,6 +20,21 @@ export function ProfilePage() {
       return res.data;
     },
   });
+
+  const handleUpdateUsername = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!usernameInput.trim()) return;
+    
+    setIsUpdating(true);
+    try {
+      await api.put('/users/profile', { username: usernameInput });
+      alert('Username updated successfully! Please refresh.');
+    } catch (error: any) {
+      alert(error.response?.data?.message || 'Failed to update username');
+    } finally {
+      setIsUpdating(false);
+    }
+  };
 
   if (isLoading) return <Spinner />;
   if (!profile) return null;
@@ -65,6 +87,26 @@ export function ProfilePage() {
           </Card>
         ))}
       </div>
+
+      <Card className="mt-8">
+        <h3 className="text-lg font-bold text-white mb-4">Public Profile Settings</h3>
+        <p className="text-sm text-muted mb-4">Set a unique username to share your public developer profile.</p>
+        <form onSubmit={handleUpdateUsername} className="flex gap-3">
+          <input 
+            type="text" 
+            placeholder="Choose a username..." 
+            value={usernameInput}
+            onChange={(e) => setUsernameInput(e.target.value)}
+            className="flex-1 rounded-lg border border-slate-700 bg-surface px-4 py-2 text-white outline-none focus:border-secondary"
+          />
+          <Button type="submit" disabled={isUpdating}>Save</Button>
+        </form>
+        {user?.username && (
+          <p className="text-sm text-muted mt-3">
+            Your public profile: <a href={`/${user.username}`} target="_blank" className="text-secondary hover:underline">localhost:5173/{user.username}</a>
+          </p>
+        )}
+      </Card>
     </div>
   );
 }

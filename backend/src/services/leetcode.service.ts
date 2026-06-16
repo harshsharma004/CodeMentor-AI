@@ -30,14 +30,15 @@ export async function fetchLeetCodeProfile(username: string) {
     })
   });
 
-  const data = await response.json();
-  
-  if (data.errors || !data.data?.matchedUser) {
+  const result = (await response.json()) as any;
+  const data = result.data;
+
+  if (result.errors || !data || !data.matchedUser) {
     throw new Error('LeetCode user not found');
   }
 
-  const stats = data.data.matchedUser.submitStats.acSubmissionNum;
-  const contest = data.data.userContestRanking;
+  const stats = data.matchedUser.submitStats.acSubmissionNum;
+  const contest = data.userContestRanking;
 
   const easy = stats.find((s: any) => s.difficulty === 'Easy')?.count || 0;
   const medium = stats.find((s: any) => s.difficulty === 'Medium')?.count || 0;

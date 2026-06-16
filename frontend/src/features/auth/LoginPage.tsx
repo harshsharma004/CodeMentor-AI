@@ -23,13 +23,13 @@ export function LoginPage() {
   };
 
   return (
-    <div>
-      <h1 className="text-2xl font-bold text-white mb-2">Welcome back</h1>
-      <p className="text-muted mb-8">Sign in to continue your coding journey</p>
+    <div className="w-full">
+      <h1 className="text-3xl font-bold text-white mb-2 tracking-tight">Welcome back</h1>
+      <p className="text-slate-400 mb-8 font-light">Sign in to continue your interview prep.</p>
 
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit} className="space-y-5">
         {error && (
-          <div className="rounded-lg bg-red-500/10 border border-red-500/20 px-4 py-3 text-sm text-red-400">
+          <div className="rounded-[12px] bg-red-500/10 border border-red-500/20 px-4 py-3 text-sm text-red-400">
             {error}
           </div>
         )}
@@ -49,20 +49,24 @@ export function LoginPage() {
           placeholder="••••••••"
           required
         />
-        <div className="flex justify-end">
-          <Link to="/forgot-password" className="text-sm text-secondary hover:underline">
+        <div className="flex justify-end mt-2">
+          <Link to="/forgot-password" className="text-sm text-indigo-400 hover:text-indigo-300 transition-colors">
             Forgot password?
           </Link>
         </div>
-        <Button type="submit" className="w-full" loading={login.isPending}>
+        <Button 
+          type="submit" 
+          className="w-full mt-6 bg-white text-black hover:bg-slate-200 font-bold rounded-[12px] py-6 shadow-none" 
+          loading={login.isPending}
+        >
           Sign In
         </Button>
       </form>
 
-      <p className="mt-6 text-center text-sm text-muted">
+      <p className="mt-8 text-center text-sm text-slate-400">
         Don&apos;t have an account?{' '}
-        <Link to="/register" className="text-secondary hover:underline font-medium">
-          Sign up
+        <Link to="/register" className="text-white hover:text-indigo-300 font-semibold transition-colors">
+          Sign up for free
         </Link>
       </p>
     </div>

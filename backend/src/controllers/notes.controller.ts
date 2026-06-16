@@ -21,7 +21,7 @@ export async function getNotes(req: AuthRequest, res: Response, next: NextFuncti
 export async function getNoteByProblem(req: AuthRequest, res: Response, next: NextFunction) {
   try {
     const userId = req.user!.id;
-    const { problemId } = req.params;
+    const problemId = req.params.problemId as string;
     
     const note = await prisma.problemNote.findUnique({
       where: {
@@ -74,7 +74,7 @@ export async function upsertNote(req: AuthRequest, res: Response, next: NextFunc
 export async function deleteNote(req: AuthRequest, res: Response, next: NextFunction) {
   try {
     const userId = req.user!.id;
-    const { id } = req.params;
+    const id = req.params.id as string;
     
     const note = await prisma.problemNote.findUnique({ where: { id } });
     if (!note || note.userId !== userId) {
